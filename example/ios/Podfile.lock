@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - sound_stream (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - sound_stream (from `.symlinks/plugins/sound_stream/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  sound_stream:
+    :path: ".symlinks/plugins/sound_stream/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  sound_stream: eba0f2a5994b91d9e5009a739df6e98515a7b44f
+
+PODFILE CHECKSUM: c34e2287a9ccaa606aeceab922830efb9a6ff69a
+
+COCOAPODS: 1.9.0

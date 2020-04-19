@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 
-import 'package:flutter/services.dart';
 import 'package:sound_stream/sound_stream.dart';
 
 void main() {
@@ -14,32 +14,66 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  RecorderStream _recorder = RecorderStream();
+  PlayerStream _player = PlayerStream();
+
+  List<Uint8List> _micChunks = [];
+  bool _isRecording = false;
+  bool _isPlaying = false;
+
+  StreamSubscription _recorderStatus;
+  StreamSubscription _playerStatus;
+  StreamSubscription _audioStream;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    initPlugin();
+  }
+
+  @override
+  void dispose() {
+    _recorderStatus?.cancel();
+    _playerStatus?.cancel();
+    _audioStream?.cancel();
+    super.dispose();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = await SoundStream.platformVersion;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
+  Future<void> initPlugin() async {
+    _recorderStatus = _recorder.status.listen((status) {
+      if (mounted)
+        setState(() {
+          _isRecording = status == SoundStreamStatus.Playing;
+        });
     });
+
+    _audioStream = _recorder.audioStream.listen((data) {
+      _micChunks.add(data);
+    });
+
+    _playerStatus = _player.status.listen((status) {
+      if (mounted)
+        setState(() {
+          _isPlaying = status == SoundStreamStatus.Playing;
+        });
+    });
+
+    await Future.wait([
+      _recorder.initialize(),
+      _player.initialize(),
+    ]);
+  }
+
+  void _play() async {
+    await _player.start();
+
+    if (_micChunks.isNotEmpty) {
+      for (var chunk in _micChunks) {
+        await _player.writeChunk(chunk);
+      }
+      _micChunks.clear();
+    }
   }
 
   @override
@@ -49,8 +83,19 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            IconButton(
+              icon: Icon(_isRecording ? Icons.mic_off : Icons.mic),
+              onPressed: _isRecording ? _recorder.stop : _recorder.start,
+            ),
+            IconButton(
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+              onPressed:
+                  _isRecording ? null : (_isPlaying ? _player.stop : _play),
+            ),
+          ],
         ),
       ),
     );
