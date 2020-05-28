@@ -236,6 +236,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private func startRecording(_ result: @escaping FlutterResult) {
         resetEngineForRecord()
         startEngine()
+        sendPlayerStatus(SoundStreamStatus.Stopped)
         sendRecorderStatus(SoundStreamStatus.Playing)
         result(true)
     }
@@ -276,6 +277,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private func startPlayer(_ result: @escaping FlutterResult) {
         stopEngine()
         startEngine()
+        sendRecorderStatus(SoundStreamStatus.Stopped)
         if !mPlayerNode.isPlaying {
             mPlayerNode.play()
         }
@@ -335,7 +337,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         return pcmBuffer
     }
     
-    func audioBufferToBytes(_ audioBuffer: AVAudioPCMBuffer) -> [UInt8] {
+    private func audioBufferToBytes(_ audioBuffer: AVAudioPCMBuffer) -> [UInt8] {
         let srcLeft = audioBuffer.int16ChannelData![0]
         let bytesPerFrame = audioBuffer.format.streamDescription.pointee.mBytesPerFrame
         let numBytes = Int(bytesPerFrame * audioBuffer.frameLength)
