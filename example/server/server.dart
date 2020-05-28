@@ -9,6 +9,7 @@ main() {
     server.listen((HttpRequest request) {
       WebSocketTransformer.upgrade(request).then((WebSocket ws) {
         connections.add(ws);
+        print('[+]Connected');
         ws.listen(
           (data) {
             // Broadcast data to all other clients
@@ -20,7 +21,7 @@ main() {
           },
           onDone: () {
             connections.remove(ws);
-            print('[+]Done :)');
+            print('[-]Disconnected');
           },
           onError: (err) {
             connections.remove(ws);

@@ -21,6 +21,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.ShortBuffer
 
 const val methodChannelName = "vn.casperpas.sound_stream:methods"
@@ -331,7 +332,7 @@ public class SoundStreamPlugin : FlutterPlugin,
         try {
             val buffer = ByteBuffer.wrap(chunk)
             val shortBuffer = ShortBuffer.allocate(chunk.size / 2)
-            shortBuffer.put(buffer.asShortBuffer())
+            shortBuffer.put(buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer())
             val shortChunk = shortBuffer.array()
 
             mAudioTrack?.write(shortChunk, 0, shortChunk.size)
@@ -395,7 +396,7 @@ public class SoundStreamPlugin : FlutterPlugin,
                 // https://flutter.io/platform-channels/#codec
                 // convert short to int because of platform-channel's limitation
                 val byteBuffer = ByteBuffer.allocate(shortOut * 2)
-                byteBuffer.asShortBuffer().put(data)
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(data)
 
                 sendEventMethod("dataPeriod", byteBuffer.array())
             }
