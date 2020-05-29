@@ -20,7 +20,9 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import kotlin.experimental.and
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.ShortBuffer
 
 const val methodChannelName = "vn.casperpas.sound_stream:methods"
 
@@ -57,8 +59,8 @@ public class SoundStreamPlugin : FlutterPlugin,
     //========= Recorder's vars
     private val mRecordFormat = AudioFormat.ENCODING_PCM_16BIT
     private var mRecordSampleRate = 16000 // 16Khz
-    private var mRecorderBufferSize = 1024
-    private var mPeriodFrames = 0
+    private var mRecorderBufferSize = 8192
+    private var mPeriodFrames = 8192
     private var audioData: ShortArray? = null
     private var mRecorder: AudioRecord? = null
     private var mListener: OnRecordPositionUpdateListener? = null
@@ -66,7 +68,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     //========= Player's vars
     private var mAudioTrack: AudioTrack? = null
     private var mPlayerSampleRate = 16000 // 16Khz
-    private var mPlayerBufferSize = 1024
+    private var mPlayerBufferSize = 10240
     private var mPlayerFormat: AudioFormat = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
@@ -265,6 +267,11 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun startRecording(result: Result) {
         try {
+            if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
+                mAudioTrack?.stop()
+                mAudioTrack?.release()
+                sendPlayerStatus(SoundStreamStatus.Stopped)
+            }
             if (mRecorder!!.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
                 result.success(true)
                 return
@@ -323,9 +330,12 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun pushPlayerChunk(chunk: ByteArray, result: Result) {
         try {
-            chunk.asIterable().chunked(mPlayerBufferSize).forEach {
-                mAudioTrack?.write(it.toByteArray(), 0, it.size)
-            }
+            val buffer = ByteBuffer.wrap(chunk)
+            val shortBuffer = ShortBuffer.allocate(chunk.size / 2)
+            shortBuffer.put(buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer())
+            val shortChunk = shortBuffer.array()
+
+            mAudioTrack?.write(shortChunk, 0, shortChunk.size)
             result.success(true)
         } catch (e: Exception) {
             result.error(SoundStreamErrors.FailedToWriteBuffer.name, "Failed to write Player buffer", e.localizedMessage)
@@ -340,6 +350,7 @@ public class SoundStreamPlugin : FlutterPlugin,
             if (mRecorder?.state == AudioRecord.STATE_INITIALIZED) {
                 mRecorder?.stop()
                 mRecorder?.release()
+                sendRecorderStatus(SoundStreamStatus.Stopped)
             }
 
             val audioAttributes = AudioAttributes.Builder()
@@ -358,8 +369,10 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun stopPlayer(result: Result) {
         try {
-            mAudioTrack?.stop()
-            mAudioTrack?.release()
+            if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
+                mAudioTrack?.stop()
+                mAudioTrack?.release()
+            }
             sendPlayerStatus(SoundStreamStatus.Stopped)
             result.success(true)
         } catch (e: Exception) {
@@ -381,18 +394,12 @@ public class SoundStreamPlugin : FlutterPlugin,
                 val data = audioData!!
                 val shortOut = recorder.read(data, 0, mPeriodFrames)
                 // https://flutter.io/platform-channels/#codec
-                // convert short to byte because of platform-channel's limitation
-                val audioValues = ByteArray(data.size * 2)
+                // convert short to int because of platform-channel's limitation
+                val byteBuffer = ByteBuffer.allocate(shortOut * 2)
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(data)
 
-                // make a copy of values to pass
-                for (i in 0 until shortOut) {
-                    audioValues[i * 2] = (data[i] and 0xff).toByte()
-                    audioValues[i * 2 + 1] = (data[i] shr 8 and 0xff).toByte()
-                }
-                sendEventMethod("dataPeriod", audioValues)
+                sendEventMethod("dataPeriod", byteBuffer.array())
             }
         }
     }
 }
-
-private infix fun Short.shr(count: Int): Short = this.toInt().shr(count).toShort()

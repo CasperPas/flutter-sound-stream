@@ -5,10 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Flutter",
+            "name": "Local",
             "request": "launch",
             "type": "dart",
             "program": "example/lib/main.dart"
-        }
+        },
+        {
+          "name": "Socket",
+          "request": "launch",
+          "type": "dart",
+          "program": "example/lib/main-talky.dart"
+      }
     ]
 }
