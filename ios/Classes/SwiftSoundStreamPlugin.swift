@@ -35,6 +35,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var mRecordFormat: AVAudioFormat!
     
     //========= Player's vars
+    private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 32000   // 32Khz
     private let mPlayerBus = 0
     private let mPlayerNode = AVAudioPlayerNode()
     private var mPlayerSampleRate: Double = 16000 // 16Khz
@@ -54,7 +55,10 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         self.channel = channel
         self.registrar = registrar
         self.mInputNode = mAudioEngine.inputNode
-//        mAudioEngine.prepare()
+        
+        super.init()
+        self.attachPlayer()
+        mAudioEngine.prepare()
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -178,7 +182,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         
         checkAndRequestPermission { isGranted in
             if isGranted {
-                self.resetEngineForRecord()
                 self.sendRecorderStatus(SoundStreamStatus.Initialized)
                 self.sendResult(result, true)
             } else {
@@ -197,19 +200,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         let ratio: Float = Float(inputFormat.sampleRate)/Float(mRecordFormat.sampleRate)
         
         input.installTap(onBus: mRecordBus, bufferSize: mRecordBufferSize, format: inputFormat) { (buffer, time) -> Void in
-//            var newBufferAvailable = true
-//
-//            let inputCallback: AVAudioConverterInputBlock = { inNumPackets, outStatus in
-//                if newBufferAvailable {
-//                    outStatus.pointee = .haveData
-//                    newBufferAvailable = false
-//                    return buffer
-//                } else {
-//                    outStatus.pointee = .noDataNow
-//                    return nil
-//                }
-//            }
-            
             let inputCallback: AVAudioConverterInputBlock = { inNumPackets, outStatus in
                 outStatus.pointee = .haveData
                 return buffer
@@ -225,18 +215,12 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
                 let values = self.audioBufferToBytes(convertedBuffer)
                 self.sendMicData(values)
             }
-            //            else{
-            //                let values = UnsafeBufferPointer(start: convertedBuffer.int32ChannelData![0], count: Int(convertedBuffer.frameLength))
-            //                let arr = Array(values)
-            //                self.sendMicData(arr)
-            //            }
         }
     }
     
     private func startRecording(_ result: @escaping FlutterResult) {
         resetEngineForRecord()
         startEngine()
-        sendPlayerStatus(SoundStreamStatus.Stopped)
         sendRecorderStatus(SoundStreamStatus.Playing)
         result(true)
     }
@@ -267,17 +251,18 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         mPlayerSampleRate = argsArr["sampleRate"] as? Double ?? mPlayerSampleRate
         debugLogging = argsArr["showLogs"] as? Bool ?? debugLogging
         mPlayerInputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mPlayerSampleRate, channels: 1, interleaved: true)
-        mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: mPlayerSampleRate, channels: 1, interleaved: true)
-        
-        mAudioEngine.attach(mPlayerNode)
-        mAudioEngine.connect(mPlayerNode, to: mAudioEngine.outputNode, format: mPlayerOutputFormat)
         sendPlayerStatus(SoundStreamStatus.Initialized)
     }
     
+    private func attachPlayer() {
+        mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE, channels: 1, interleaved: true)
+        
+        mAudioEngine.attach(mPlayerNode)
+        mAudioEngine.connect(mPlayerNode, to: mAudioEngine.outputNode, format: mPlayerOutputFormat)
+    }
+    
     private func startPlayer(_ result: @escaping FlutterResult) {
-        stopEngine()
         startEngine()
-        sendRecorderStatus(SoundStreamStatus.Stopped)
         if !mPlayerNode.isPlaying {
             mPlayerNode.play()
         }
@@ -289,7 +274,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         if mPlayerNode.isPlaying {
             mPlayerNode.stop()
         }
-        stopEngine()
         sendPlayerStatus(SoundStreamStatus.Stopped)
         result(true)
     }
@@ -341,16 +325,16 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         let srcLeft = audioBuffer.int16ChannelData![0]
         let bytesPerFrame = audioBuffer.format.streamDescription.pointee.mBytesPerFrame
         let numBytes = Int(bytesPerFrame * audioBuffer.frameLength)
-
+        
         // initialize bytes by 0
         var audioByteArray = [UInt8](repeating: 0, count: numBytes)
-
+        
         srcLeft.withMemoryRebound(to: UInt8.self, capacity: numBytes) { srcByteData in
             audioByteArray.withUnsafeMutableBufferPointer {
                 $0.baseAddress!.initialize(from: srcByteData, count: numBytes)
             }
         }
-
+        
         return audioByteArray
     }
     
@@ -369,17 +353,5 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         
         return audioBuffer
     }
-    
-    // developer.apple.com/documentation/coreaudiotypes/coreaudiotype_constants/1572096-audio_data_format_identifiers
-    private func getOutputFormatFromString(_ format : String) -> Int {
-        switch format {
-        case ".mp4", ".aac", ".m4a":
-            return Int(kAudioFormatMPEG4AAC)
-        case ".wav":
-            return Int(kAudioFormatLinearPCM)
-        default :
-            return Int(kAudioFormatMPEG4AAC)
-        }
-    }
-    
+
 }

@@ -82,7 +82,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _stopRecort() async {
+  void _stopRecord() async {
     await _recorder.stop();
     await _player.start();
     setState(() {
@@ -106,10 +106,10 @@ class _MyAppState extends State<MyApp> {
                 _startRecord();
               },
               onTapUp: (tap) {
-                _stopRecort();
+                _stopRecord();
               },
               onTapCancel: () {
-                _stopRecort();
+                _stopRecord();
               },
               child: Icon(
                 _isRecording ? Icons.mic_off : Icons.mic,
