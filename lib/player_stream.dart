@@ -55,4 +55,13 @@ class PlayerStream {
         break;
     }
   }
+
+  /// Stop and close all streams. This cannot be undone
+  /// Only call this method if you don't want to use this anymore
+  void dispose() {
+    stop();
+    _eventsStreamController?.close();
+    _playerStatusController?.close();
+    _audioStreamController?.close();
+  }
 }

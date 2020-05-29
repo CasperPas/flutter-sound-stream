@@ -1,6 +1,6 @@
 name: sound_stream
 description: A Flutter plugin for streaming audio data from Mic and data to Audio engine without using a file.
-version: 0.1.0
+version: 0.1.0+1
 homepage: https://github.com/CasperPas/flutter-sound-stream
 
 environment:

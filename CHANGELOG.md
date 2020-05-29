@@ -1,3 +1,7 @@
+## 0.1.0+1
+Refactor to match pub.dev's Health suggestions
+* Add a dispose method
+
 ## 0.1.0
 
 Cross-platform support
