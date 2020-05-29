@@ -27,7 +27,9 @@ class SoundStream {
     _methodChannel.setMethodCallHandler(_onMethodCall);
   }
 
+  /// Return [RecorderStream] instance (Singleton).
   RecorderStream get recorder => RecorderStream();
+  /// Return [PlayerStream] instance (Singleton).
   PlayerStream get player => PlayerStream();
 
   Future<dynamic> _onMethodCall(MethodCall call) async {
