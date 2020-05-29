@@ -29,6 +29,7 @@ class SoundStream {
 
   /// Return [RecorderStream] instance (Singleton).
   RecorderStream get recorder => RecorderStream();
+
   /// Return [PlayerStream] instance (Singleton).
   PlayerStream get player => PlayerStream();
 
