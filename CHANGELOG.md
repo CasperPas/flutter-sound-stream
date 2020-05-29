@@ -1,4 +1,8 @@
 ## 0.1.0+1
+* Recorder & Player can work simultaneously
+* Minor code refactor
+
+## 0.1.0+1
 Refactor to match pub.dev's Health suggestions
 * Add a dispose method
 

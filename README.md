@@ -8,12 +8,12 @@ Current features:
 
 * Provides stream of data from mic (Uint8List)
 * Player that receive stream of raw sound data (Uint8List)
-* Support both Android and iOS
+* Support both Android and iOS (cross-platform)
+* Recorder & Player can work simultaneously
 
 Limitations:
 * Only support PCM 16bit Mono (for now)
 * Data type send/received from stream must be Uint8List. ([Because of this Flutter's limitation](https://flutter.dev/docs/development/platform-integration/platform-channels?tab=ios-channel-swift-tab#codec))
-* Only play or record, not both at the same time (Do we even need this? 😏)
 
 To-do list:
 * Support more audio formats
