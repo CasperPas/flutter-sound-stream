@@ -83,14 +83,16 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        body: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
+              iconSize: 96.0,
               icon: Icon(_isRecording ? Icons.mic_off : Icons.mic),
               onPressed: _isRecording ? _recorder.stop : _recorder.start,
             ),
             IconButton(
+              iconSize: 96.0,
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               onPressed:
                   _isRecording ? null : (_isPlaying ? _player.stop : _play),
