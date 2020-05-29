@@ -220,11 +220,7 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun initRecorder() {
         if (mRecorder?.state == AudioRecord.STATE_INITIALIZED) {
-            mRecorder?.release()
-        }
-        if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
-            mAudioTrack?.stop()
-            mAudioTrack?.release()
+            return
         }
         mRecorder = AudioRecord(MediaRecorder.AudioSource.MIC, mRecordSampleRate, AudioFormat.CHANNEL_IN_MONO, mRecordFormat, mRecorderBufferSize)
         if (mRecorder != null) {
@@ -240,6 +236,7 @@ public class SoundStreamPlugin : FlutterPlugin,
         val initResult: HashMap<String, Any> = HashMap()
 
         if (permissionToRecordAudio) {
+            mRecorder?.release()
             initRecorder()
             initResult["isMeteringEnabled"] = true
             sendRecorderStatus(SoundStreamStatus.Initialized)
@@ -267,11 +264,6 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun startRecording(result: Result) {
         try {
-            if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
-                mAudioTrack?.stop()
-                mAudioTrack?.release()
-                sendPlayerStatus(SoundStreamStatus.Stopped)
-            }
             if (mRecorder!!.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
                 result.success(true)
                 return
@@ -315,6 +307,17 @@ public class SoundStreamPlugin : FlutterPlugin,
                 .build()
 
         mPlayerBufferSize = AudioTrack.getMinBufferSize(mPlayerSampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+
+        if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
+            mAudioTrack?.release()
+        }
+
+        val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                .build()
+        mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
         result.success(true)
         sendPlayerStatus(SoundStreamStatus.Initialized)
     }
@@ -344,21 +347,11 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun startPlayer(result: Result) {
         try {
-            if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
-                mAudioTrack?.release()
-            }
-            if (mRecorder?.state == AudioRecord.STATE_INITIALIZED) {
-                mRecorder?.stop()
-                mRecorder?.release()
-                sendRecorderStatus(SoundStreamStatus.Stopped)
+            if (mAudioTrack?.state == AudioTrack.PLAYSTATE_PLAYING) {
+                result.success(true)
+                return
             }
 
-            val audioAttributes = AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
-                    .build()
-            mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
             mAudioTrack!!.play()
             sendPlayerStatus(SoundStreamStatus.Playing)
             result.success(true)
@@ -371,7 +364,6 @@ public class SoundStreamPlugin : FlutterPlugin,
         try {
             if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
                 mAudioTrack?.stop()
-                mAudioTrack?.release()
             }
             sendPlayerStatus(SoundStreamStatus.Stopped)
             result.success(true)

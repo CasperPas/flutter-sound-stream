@@ -49,7 +49,11 @@ class _MyAppState extends State<MyApp> {
     });
 
     _audioStream = _recorder.audioStream.listen((data) {
-      _micChunks.add(data);
+      if (_isPlaying) {
+        _player.writeChunk(data);
+      } else {
+        _micChunks.add(data);
+      }
     });
 
     _playerStatus = _player.status.listen((status) {
@@ -94,8 +98,7 @@ class _MyAppState extends State<MyApp> {
             IconButton(
               iconSize: 96.0,
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              onPressed:
-                  _isRecording ? null : (_isPlaying ? _player.stop : _play),
+              onPressed: _isPlaying ? _player.stop : _play,
             ),
           ],
         ),
