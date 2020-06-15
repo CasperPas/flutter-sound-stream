@@ -248,6 +248,9 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
                                                  details: nil ))
                 return
         }
+
+        setSpeakerStates(true)
+
         mPlayerSampleRate = argsArr["sampleRate"] as? Double ?? mPlayerSampleRate
         debugLogging = argsArr["showLogs"] as? Bool ?? debugLogging
         mPlayerInputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mPlayerSampleRate, channels: 1, interleaved: true)
@@ -259,6 +262,17 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         
         mAudioEngine.attach(mPlayerNode)
         mAudioEngine.connect(mPlayerNode, to: mAudioEngine.outputNode, format: mPlayerOutputFormat)
+    }
+
+    private func setSpeakerStates(_ enabled: Bool) {
+        try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playAndRecord)
+        try? AVAudioSession.sharedInstance().setMode(AVAudioSession.Mode.voiceChat)
+        if enabled {
+            try? AVAudioSession.sharedInstance().overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+        } else {
+            try? AVAudioSession.sharedInstance().overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+        }
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
     
     private func startPlayer(_ result: @escaping FlutterResult) {

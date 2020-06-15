@@ -317,7 +317,16 @@ public class SoundStreamPlugin : FlutterPlugin,
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                 .build()
-        mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+//        mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
+
+        mAudioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
+                mPlayerSampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                mPlayerBufferSize,
+                AudioTrack.MODE_STREAM,
+                AudioManager.AUDIO_SESSION_ID_GENERATE)
+        
         result.success(true)
         sendPlayerStatus(SoundStreamStatus.Initialized)
     }
