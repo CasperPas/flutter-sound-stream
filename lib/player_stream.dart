@@ -42,6 +42,9 @@ class PlayerStream {
   /// Stream's sink to receive PCM 16bit data to send to Player
   StreamSink<Uint8List> get audioStream => _audioStreamController.sink;
 
+  Future<dynamic> usePhoneSpeaker(bool value) => _methodChannel
+      .invokeMethod("usePhoneSpeaker", <String, dynamic>{"value": value});
+
   void _eventListener(dynamic event) {
     if (event == null) return;
     final String eventName = event["name"] ?? "";
