@@ -217,8 +217,19 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
             }
         }
     }
+
+    private func configureAudioSession() {
+        do {
+          try AVAudioSession.sharedInstance().setCategory(
+            AVAudioSession.Category.playAndRecord,
+            options: [AVAudioSession.CategoryOptions.mixWithOthers]
+          )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch { }
+    }
     
     private func startRecording(_ result: @escaping FlutterResult) {
+        configureAudioSession()
         resetEngineForRecord()
         startEngine()
         sendRecorderStatus(SoundStreamStatus.Playing)
