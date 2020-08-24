@@ -340,7 +340,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     private fun usePhoneSpeaker(@NonNull call: MethodCall, @NonNull result: Result) {
         val useSpeaker = call.argument<Boolean>("value") ?: false
         mAudioManager?.mode = if (useSpeaker) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL
-        mAudioManager?.setSpeakerphoneOn(true);
+        mAudioManager?.isSpeakerphoneOn = true
         result.success(true)
     }
 
