@@ -161,13 +161,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         mAudioEngine.prepare()
         startEngine()
         
-        let avAudioSession = AVAudioSession.sharedInstance()
-        var options: AVAudioSession.CategoryOptions = [AVAudioSession.CategoryOptions.allowBluetooth, AVAudioSession.CategoryOptions.mixWithOthers]
-        if #available(iOS 10.0, *) {
-            options.insert(AVAudioSession.CategoryOptions.allowBluetoothA2DP)
-        }
-        try? avAudioSession.setCategory(AVAudioSession.Category.playAndRecord, options: options)
-        try? avAudioSession.setMode(AVAudioSession.Mode.default)
+        //let avAudioSession = AVAudioSession.sharedInstance()
+        //var options: AVAudioSession.CategoryOptions = [AVAudioSession.CategoryOptions.defaultToSpeaker, AVAudioSession.CategoryOptions.allowBluetooth, AVAudioSession.CategoryOptions.mixWithOthers]
+        //if #available(iOS 10.0, *) {
+        //    options.insert(AVAudioSession.CategoryOptions.allowBluetoothA2DP)
+        //}
+        //try? avAudioSession.setCategory(AVAudioSession.Category.playAndRecord, options: options)
+        //try? avAudioSession.setMode(AVAudioSession.Mode.default)
         
         setUsePhoneSpeaker(false)
     }
@@ -218,11 +218,22 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     private func startRecorder() {
         stopRecorder()
+
+        let avAudioSession = AVAudioSession.sharedInstance()
+        var options: AVAudioSession.CategoryOptions = [AVAudioSession.CategoryOptions.defaultToSpeaker,AVAudioSession.CategoryOptions.allowBluetooth, AVAudioSession.CategoryOptions.mixWithOthers]
+        if #available(iOS 10.0, *) {
+            options.insert(AVAudioSession.CategoryOptions.allowBluetoothA2DP)
+        }
+        try? avAudioSession.setCategory(AVAudioSession.Category.playAndRecord, options: options)
+        try? avAudioSession.setMode(AVAudioSession.Mode.default)
+
+        try? avAudioSession.setActive(true)
+
         let input = mAudioEngine.inputNode
         let inputFormat = input.inputFormat(forBus: mRecordBus)
         let converter = AVAudioConverter(from: inputFormat, to: mRecordFormat!)!
         let ratio: Float = Float(inputFormat.sampleRate)/Float(mRecordFormat.sampleRate)
-        
+
         input.installTap(onBus: mRecordBus, bufferSize: mRecordBufferSize, format: inputFormat) { (buffer, time) -> Void in
             let inputCallback: AVAudioConverterInputBlock = { inNumPackets, outStatus in
                 outStatus.pointee = .haveData
@@ -316,7 +327,8 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         
         if enabled {
             try? avAudioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
-            
+            try? avAudioSession.setActive(true)
+
             for input in avAudioSession.availableInputs!{
                 if input.portType == AVAudioSession.Port.builtInMic || input.portType == AVAudioSession.Port.builtInReceiver {
                     if debugLogging {
@@ -367,6 +379,18 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     private func startPlayer(_ result: @escaping FlutterResult) {
         startEngine()
+
+        let avAudioSession = AVAudioSession.sharedInstance()
+        var options: AVAudioSession.CategoryOptions = [AVAudioSession.CategoryOptions.defaultToSpeaker, AVAudioSession.CategoryOptions.allowBluetooth, AVAudioSession.CategoryOptions.mixWithOthers]
+        if #available(iOS 10.0, *) {
+            options.insert(AVAudioSession.CategoryOptions.allowBluetoothA2DP)
+        }
+        try? avAudioSession.setCategory(AVAudioSession.Category.playback, options: options)
+        try? avAudioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+
+        try? avAudioSession.setActive(true)
+
+
         if !mPlayerNode.isPlaying {
             mPlayerNode.play()
         }
