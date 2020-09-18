@@ -387,7 +387,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         }
         try? avAudioSession.setCategory(AVAudioSession.Category.playback, options: options)
         try? avAudioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
-
+        try? avAudioSession.setMode(AVAudioSession.Mode.voiceChat)
         try? avAudioSession.setActive(true)
 
 
