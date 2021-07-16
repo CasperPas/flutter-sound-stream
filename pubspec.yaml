@@ -5,6 +5,7 @@ homepage: https://github.com/CasperPas/flutter-sound-stream
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
+  flutter: ">=1.20.0"
 
 dependencies:
   flutter:
