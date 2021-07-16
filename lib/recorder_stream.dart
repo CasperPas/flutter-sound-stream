@@ -43,8 +43,7 @@ class RecorderStream {
     final String eventName = event["name"] ?? "";
     switch (eventName) {
       case "dataPeriod":
-        final Uint8List audioData =
-            Uint8List.fromList(event["data"]) ?? Uint8List(0);
+        final Uint8List audioData = Uint8List.fromList(event["data"]);
         if (audioData.isNotEmpty) _audioStreamController.add(audioData);
         break;
       case "recorderStatus":
@@ -61,8 +60,8 @@ class RecorderStream {
   /// Only call this method if you don't want to use this anymore
   void dispose() {
     stop();
-    _eventsStreamController?.close();
-    _recorderStatusController?.close();
-    _audioStreamController?.close();
+    _eventsStreamController.close();
+    _recorderStatusController.close();
+    _audioStreamController.close();
   }
 }
