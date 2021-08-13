@@ -195,7 +195,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private func resetEngineForRecord() {
         mAudioEngine.inputNode.removeTap(onBus: mRecordBus)
         let input = mAudioEngine.inputNode
-        let inputFormat = input.outputFormat(forBus: mRecordBus)
+        let inputFormat = input.inputFormat(forBus: mRecordBus)
         let converter = AVAudioConverter(from: inputFormat, to: mRecordFormat!)!
         let ratio: Float = Float(inputFormat.sampleRate)/Float(mRecordFormat.sampleRate)
         
@@ -255,6 +255,18 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
     
     private func attachPlayer() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setActive(false)
+        try! session.setCategory(
+            .playAndRecord,
+            mode: .voiceChat,
+            options: [
+                .defaultToSpeaker,
+                .allowBluetooth,
+                .allowBluetoothA2DP,
+                .allowAirPlay
+            ])
+        try! session.setActive(true)
         mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE, channels: 1, interleaved: true)
         
         mAudioEngine.attach(mPlayerNode)
