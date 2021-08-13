@@ -259,7 +259,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         try? session.setActive(false)
         try! session.setCategory(
             .playAndRecord,
-            mode: .voiceChat,
             options: [
                 .defaultToSpeaker,
                 .allowBluetooth,
