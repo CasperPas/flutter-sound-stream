@@ -385,6 +385,8 @@ public class SoundStreamPlugin : FlutterPlugin,
             override fun onPeriodicNotification(recorder: AudioRecord) {
                 val data = audioData!!
                 val shortOut = recorder.read(data, 0, mPeriodFrames)
+                // this condistion to prevent app crash from happening 
+                if (shortOut < 1) { return }
                 // https://flutter.io/platform-channels/#codec
                 // convert short to int because of platform-channel's limitation
                 val byteBuffer = ByteBuffer.allocate(shortOut * 2)
