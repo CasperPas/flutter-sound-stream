@@ -21,7 +21,7 @@ public enum SoundStreamStatus: String {
 public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var channel: FlutterMethodChannel
     private var registrar: FlutterPluginRegistrar
-    private var hasPermission: Bool = false
+//    private var hasPermission: Bool = false
     private var debugLogging: Bool = false
     
     //========= Recorder's vars
@@ -63,8 +63,8 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
-        case "hasPermission":
-            hasPermission(result)
+//        case "hasPermission":
+//            hasPermission(result)
         case "initializeRecorder":
             initializeRecorder(call, result)
         case "startRecording":
@@ -99,54 +99,54 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     /** ======== Plugin methods ======== **/
     
-    private func checkAndRequestPermission(completion callback: @escaping ((Bool) -> Void)) {
-        if (hasPermission) {
-            callback(hasPermission)
-            return
-        }
-        
-        var permission: AVAudioSession.RecordPermission
-        #if swift(>=4.2)
-        permission = AVAudioSession.sharedInstance().recordPermission
-        #else
-        permission = AVAudioSession.sharedInstance().recordPermission()
-        #endif
-        switch permission {
-        case .granted:
-            print("granted")
-            hasPermission = true
-            callback(hasPermission)
-            break
-        case .denied:
-            print("denied")
-            hasPermission = false
-            callback(hasPermission)
-            break
-        case .undetermined:
-            print("undetermined")
-            AVAudioSession.sharedInstance().requestRecordPermission() { [unowned self] allowed in
-                if allowed {
-                    self.hasPermission = true
-                    print("undetermined true")
-                    callback(self.hasPermission)
-                } else {
-                    self.hasPermission = false
-                    print("undetermined false")
-                    callback(self.hasPermission)
-                }
-            }
-            break
-        default:
-            callback(hasPermission)
-            break
-        }
-    }
+//    private func checkAndRequestPermission(completion callback: @escaping ((Bool) -> Void)) {
+//        if (hasPermission) {
+//            callback(hasPermission)
+//            return
+//        }
+//
+//        var permission: AVAudioSession.RecordPermission
+//        #if swift(>=4.2)
+//        permission = AVAudioSession.sharedInstance().recordPermission
+//        #else
+//        permission = AVAudioSession.sharedInstance().recordPermission()
+//        #endif
+//        switch permission {
+//        case .granted:
+//            print("granted")
+//            hasPermission = true
+//            callback(hasPermission)
+//            break
+//        case .denied:
+//            print("denied")
+//            hasPermission = false
+//            callback(hasPermission)
+//            break
+//        case .undetermined:
+//            print("undetermined")
+//            AVAudioSession.sharedInstance().requestRecordPermission() { [unowned self] allowed in
+//                if allowed {
+//                    self.hasPermission = true
+//                    print("undetermined true")
+//                    callback(self.hasPermission)
+//                } else {
+//                    self.hasPermission = false
+//                    print("undetermined false")
+//                    callback(self.hasPermission)
+//                }
+//            }
+//            break
+//        default:
+//            callback(hasPermission)
+//            break
+//        }
+//    }
     
-    private func hasPermission( _ result: @escaping FlutterResult) {
-        // checkAndRequestPermission { value in
-        //     self.sendResult(result, value)
-        // }
-    }
+//    private func hasPermission( _ result: @escaping FlutterResult) {
+//        checkAndRequestPermission { value in
+//            self.sendResult(result, value)
+//        }
+//    }
     
     private func startEngine() {
         guard !mAudioEngine.isRunning else {
@@ -180,16 +180,19 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         debugLogging = argsArr["showLogs"] as? Bool ?? debugLogging
         mRecordFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mRecordSampleRate, channels: 1, interleaved: true)
         
-        checkAndRequestPermission { isGranted in
-            if isGranted {
-                self.sendRecorderStatus(SoundStreamStatus.Initialized)
-                self.sendResult(result, true)
-            } else {
-                self.sendResult(result, FlutterError( code: SoundStreamErrors.Unknown.rawValue,
-                                                      message:"Incorrect parameters",
-                                                      details: nil ))
-            }
-        }
+        self.sendRecorderStatus(SoundStreamStatus.Initialized)
+        self.sendResult(result, true)
+        
+//        checkAndRequestPermission { isGranted in
+//            if isGranted {
+//                self.sendRecorderStatus(SoundStreamStatus.Initialized)
+//                self.sendResult(result, true)
+//            } else {
+//                self.sendResult(result, FlutterError( code: SoundStreamErrors.Unknown.rawValue,
+//                                                      message:"Incorrect parameters",
+//                                                      details: nil ))
+//            }
+//        }
     }
     
     private func resetEngineForRecord() {

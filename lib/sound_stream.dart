@@ -1,15 +1,11 @@
 library sound_stream;
 
 import 'dart:async';
-import 'dart:typed_data';
-
 import 'package:flutter/services.dart';
-
 part 'recorder_stream.dart';
 part 'player_stream.dart';
 
-const MethodChannel _methodChannel =
-    const MethodChannel('vn.casperpas.sound_stream:methods');
+const MethodChannel _methodChannel = const MethodChannel('vn.casperpas.sound_stream:methods');
 
 final _eventsStreamController = StreamController<dynamic>.broadcast();
 
