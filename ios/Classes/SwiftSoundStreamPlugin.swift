@@ -21,7 +21,7 @@ public enum SoundStreamStatus: String {
 public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var channel: FlutterMethodChannel
     private var registrar: FlutterPluginRegistrar
-    private var hasPermission: Bool = true
+    private var hasPermission: Bool = false
     private var debugLogging: Bool = false
     
     //========= Recorder's vars
@@ -143,9 +143,9 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
     
     private func hasPermission( _ result: @escaping FlutterResult) {
-        checkAndRequestPermission { value in
-            self.sendResult(result, value)
-        }
+        // checkAndRequestPermission { value in
+        //     self.sendResult(result, value)
+        // }
     }
     
     private func startEngine() {
