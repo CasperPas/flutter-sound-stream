@@ -21,7 +21,7 @@ public enum SoundStreamStatus: String {
 public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var channel: FlutterMethodChannel
     private var registrar: FlutterPluginRegistrar
-    private var hasPermission: Bool = false
+    private var hasPermission: Bool = true
     private var debugLogging: Bool = false
     
     //========= Recorder's vars
