@@ -182,11 +182,9 @@ public class SoundStreamPlugin : FlutterPlugin,
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
                                             grantResults: IntArray): Boolean {
         when (requestCode) {
-            audioRecordPermissionCode -> {
-                if (grantResults != null) {
+            audioRecordPermissionCode -> { 
                     permissionToRecordAudio = grantResults.isNotEmpty() &&
                             grantResults[0] == PackageManager.PERMISSION_GRANTED
-                }
                 completeInitializeRecorder()
                 return true
             }
