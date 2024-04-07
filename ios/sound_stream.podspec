@@ -4,14 +4,14 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'sound_stream'
-  s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.version          = '0.1.0'
+  s.summary          = 'A flutter plugin for streaming audio data from mic & to speaker'
   s.description      = <<-DESC
-A new flutter plugin project.
+  A flutter plugin for streaming audio data from mic & to speaker
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/CasperPas/flutter-sound-stream'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Jeff Le' => 'me@jeffle.dev' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'

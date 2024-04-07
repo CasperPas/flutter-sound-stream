@@ -36,6 +36,10 @@ class PlayerStream {
   Future<dynamic> writeChunk(Uint8List data) => _methodChannel
       .invokeMethod("writeChunk", <String, dynamic>{"data": data});
 
+  /// Switching/Forcing player to use phone's speaker.
+  Future<dynamic> usePhoneSpeaker(bool value) => _methodChannel
+      .invokeMethod("usePhoneSpeaker", <String, dynamic>{"value": value});
+
   /// Current status of the [PlayerStream]
   Stream<SoundStreamStatus> get status => _playerStatusController.stream;
 

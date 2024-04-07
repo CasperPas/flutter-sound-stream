@@ -67,6 +67,7 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     //========= Player's vars
     private var mAudioTrack: AudioTrack? = null
+    private var mAudioManager: AudioManager? = null
     private var mPlayerSampleRate = 16000 // 16Khz
     private var mPlayerBufferSize = 10240
     private var mPlayerFormat: AudioFormat = AudioFormat.Builder()
@@ -108,6 +109,7 @@ public class SoundStreamPlugin : FlutterPlugin,
             when (call.method) {
                 "hasPermission" -> hasPermission(result)
                 "initializeRecorder" -> initializeRecorder(call, result)
+                "usePhoneSpeaker" -> usePhoneSpeaker(call, result)
                 "startRecording" -> startRecording(result)
                 "stopRecording" -> stopRecording(result)
                 "initializePlayer" -> initializePlayer(call, result)
@@ -165,6 +167,11 @@ public class SoundStreamPlugin : FlutterPlugin,
 //        currentActivity = null
     }
 
+    private fun initAudioManager() {
+        if (mAudioManager != null) return
+        mAudioManager = currentActivity?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+
     /** ======== Plugin methods ======== **/
 
     private fun hasRecordPermission(): Boolean {
@@ -210,6 +217,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     }
 
     private fun initializeRecorder(call: MethodCall, result: Result) {
+        initAudioManager()
         mRecordSampleRate = call.argument<Int>("sampleRate") ?: mRecordSampleRate
         debugLogging = call.argument<Boolean>("showLogs") ?: false
         mPeriodFrames = AudioRecord.getMinBufferSize(
@@ -333,6 +341,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     }
 
     private fun initializePlayer(call: MethodCall, result: Result) {
+        initAudioManager()
         mPlayerSampleRate = call.argument<Int>("sampleRate") ?: mPlayerSampleRate
         debugLogging = call.argument<Boolean>("showLogs") ?: false
         mPlayerFormat = AudioFormat.Builder()
@@ -365,6 +374,9 @@ public class SoundStreamPlugin : FlutterPlugin,
             AudioTrack.MODE_STREAM,
             AudioManager.AUDIO_SESSION_ID_GENERATE
         )
+
+        mAudioManager?.mode = AudioManager.MODE_NORMAL
+
         result.success(true)
         sendPlayerStatus(SoundStreamStatus.Initialized)
     }
@@ -398,6 +410,12 @@ public class SoundStreamPlugin : FlutterPlugin,
                 e.localizedMessage
             )
         }
+    }
+
+    private fun usePhoneSpeaker(call: MethodCall, result: Result) {
+        val useSpeaker = call.argument<Boolean>("value") ?: false
+        mAudioManager?.mode = if (useSpeaker) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL
+        result.success(true)
     }
 
     private fun startPlayer(result: Result) {
