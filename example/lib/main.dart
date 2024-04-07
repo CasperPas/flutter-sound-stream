@@ -21,9 +21,9 @@ class _MyAppState extends State<MyApp> {
   bool _isRecording = false;
   bool _isPlaying = false;
 
-  StreamSubscription _recorderStatus;
-  StreamSubscription _playerStatus;
-  StreamSubscription _audioStream;
+  StreamSubscription? _recorderStatus;
+  StreamSubscription? _playerStatus;
+  StreamSubscription? _audioStream;
 
   @override
   void initState() {

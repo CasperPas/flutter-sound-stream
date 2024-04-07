@@ -5,7 +5,7 @@ import 'package:sound_stream/sound_stream.dart';
 import 'package:web_socket_channel/io.dart';
 
 // Change this URL to your own
-const _SERVER_URL = 'ws://4167c9d9.ngrok.io';
+const _SERVER_URL = 'wss://linhlt.ap.ngrok.io';
 
 void main() {
   runApp(MyApp());
@@ -23,9 +23,9 @@ class _MyAppState extends State<MyApp> {
   bool _isRecording = false;
   bool _isPlaying = false;
 
-  StreamSubscription _recorderStatus;
-  StreamSubscription _playerStatus;
-  StreamSubscription _audioStream;
+  StreamSubscription? _recorderStatus;
+  StreamSubscription? _playerStatus;
+  StreamSubscription? _audioStream;
 
   final channel = IOWebSocketChannel.connect(_SERVER_URL);
 

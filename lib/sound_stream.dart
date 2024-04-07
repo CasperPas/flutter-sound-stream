@@ -1,8 +1,6 @@
 library sound_stream;
 
 import 'dart:async';
-import 'dart:typed_data';
-
 import 'package:flutter/services.dart';
 
 part 'recorder_stream.dart';
