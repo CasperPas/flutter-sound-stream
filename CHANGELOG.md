@@ -1,3 +1,7 @@
+## 0.4.0
+* Fix some bugs reported by the community: crashes, cannot play via headsets...
+* Allow to force using built-in mic & speaker
+
 ## 0.3.0
 * Migrate to null-safety
 
