@@ -142,7 +142,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.4.0"
+    version: "0.4.1"
   source_span:
     dependency: transitive
     description:
@@ -233,3 +233,4 @@ packages:
     version: "2.4.4"
 sdks:
   dart: ">=3.3.0 <4.0.0"
+  flutter: ">=1.12.0"

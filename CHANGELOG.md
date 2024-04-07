@@ -1,3 +1,6 @@
+## 0.4.1
+* Fix issue #62 - Orange microphone bubble remains on iOS
+
 ## 0.4.0
 * Fix some bugs reported by the community: crashes, cannot play via headsets...
 * Allow to force using built-in mic & speaker
