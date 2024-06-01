@@ -37,7 +37,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var mRecordMixer: AVAudioMixerNode!
 
     //========= Player's vars
-    private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 32000   // 32Khz
+    private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 16000   // avoids clicking when input is at same rate
     private let mPlayerBus = 0
     private var isUsingSpeaker: Bool = false
     private let mPlayerNode = AVAudioPlayerNode()
@@ -63,6 +63,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         super.init()
         self.attachPlayer()
         mAudioEngine.prepare()
+        /** add override to enhance volume **/
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.overrideOutputAudioPort(.speaker)
+        } catch {
+            print("error overriding OutputAudioPort")
+        }
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
