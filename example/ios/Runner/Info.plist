@@ -43,5 +43,9 @@
     <false />
     <key>NSMicrophoneUsageDescription</key>
     <string>Need microphone access for recording audio</string>
-  </dict>
+  	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+</dict>
 </plist>

@@ -14,9 +14,9 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sound_stream/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  sound_stream: eba0f2a5994b91d9e5009a739df6e98515a7b44f
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  sound_stream: 747e461fc6924caab1afc28c186b41f04f3bea76
 
-PODFILE CHECKSUM: c34e2287a9ccaa606aeceab922830efb9a6ff69a
+PODFILE CHECKSUM: 075ddf6b19cdcced44581bd8fbdfb58404a78f8a
 
-COCOAPODS: 1.9.2
+COCOAPODS: 1.15.2

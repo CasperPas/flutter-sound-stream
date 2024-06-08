@@ -4,18 +4,18 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'sound_stream'
-  s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.version          = '0.1.0'
+  s.summary          = 'A flutter plugin for streaming audio data from mic & to speaker'
   s.description      = <<-DESC
-A new flutter plugin project.
+  A flutter plugin for streaming audio data from mic & to speaker
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/CasperPas/flutter-sound-stream'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Jeff Le' => 'me@jeffle.dev' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.platform = :ios, '8.0'
+  s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
