@@ -18,8 +18,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry
-import io.flutter.plugin.common.PluginRegistry.Registrar
+// Removed legacy v1 embedding imports
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.ShortBuffer
@@ -44,8 +43,8 @@ enum class SoundStreamStatus {
 /** SoundStreamPlugin */
 public class SoundStreamPlugin : FlutterPlugin,
     MethodCallHandler,
-    PluginRegistry.RequestPermissionsResultListener,
-    ActivityAware {
+    ActivityAware,
+    io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener {
     private val logTag = "SoundStreamPlugin"
     private val audioRecordPermissionCode = 14887
 
@@ -85,24 +84,7 @@ public class SoundStreamPlugin : FlutterPlugin,
         )
     }
 
-    // This static function is optional and equivalent to onAttachedToEngine. It supports the old
-    // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
-    // plugin registration via this function while apps migrate to use the new Android APIs
-    // post-flutter-1.12 via https://flutter.dev/go/android-project-migration.
-    //
-    // It is encouraged to share logic between onAttachedToEngine and registerWith to keep
-    // them functionally equivalent. Only one of onAttachedToEngine or registerWith will be called
-    // depending on the user's project. onAttachedToEngine or registerWith must both be defined
-    // in the same class.
-    companion object {
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            val plugin = SoundStreamPlugin()
-            plugin.currentActivity = registrar.activity()
-            registrar.addRequestPermissionsResultListener(plugin)
-            plugin.onAttachedToEngine(registrar.context(), registrar.messenger())
-        }
-    }
+    // Legacy v1 `registerWith` removed for modern Flutter embedding v2 compatibility
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         try {
@@ -144,13 +126,22 @@ public class SoundStreamPlugin : FlutterPlugin,
                 it.release()
             }
             mRecorder = null
+            mAudioTrack?.let {
+                try {
+                    if (it.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                        it.stop()
+                    }
+                } catch (_: Exception) {}
+                try { it.release() } catch (_: Exception) {}
+            }
+            mAudioTrack = null
         } catch (e: Exception) {
             debugLog("onDetachedFromEngine error: ${e.localizedMessage}")
         }
     }
 
     override fun onDetachedFromActivity() {
-//        currentActivity
+        currentActivity = null
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -164,7 +155,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-//        currentActivity = null
+        currentActivity = null
     }
 
     private fun initAudioManager() {
@@ -299,12 +290,12 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun startRecording(result: Result) {
         try {
-            if (mRecorder!!.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+            if (mRecorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
                 result.success(true)
                 return
             }
             initRecorder()
-            mRecorder!!.startRecording()
+            mRecorder?.startRecording()
             sendRecorderStatus(SoundStreamStatus.Playing)
             result.success(true)
         } catch (e: IllegalStateException) {
@@ -319,11 +310,11 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun stopRecording(result: Result) {
         try {
-            if (mRecorder!!.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
+            if (mRecorder?.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
                 result.success(true)
                 return
             }
-            mRecorder!!.stop()
+            mRecorder?.stop()
             sendRecorderStatus(SoundStreamStatus.Stopped)
             result.success(true)
         } catch (e: IllegalStateException) {
@@ -420,12 +411,12 @@ public class SoundStreamPlugin : FlutterPlugin,
 
     private fun startPlayer(result: Result) {
         try {
-            if (mAudioTrack?.state == AudioTrack.PLAYSTATE_PLAYING) {
+            if (mAudioTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
                 result.success(true)
                 return
             }
 
-            mAudioTrack!!.play()
+            mAudioTrack?.play()
             sendPlayerStatus(SoundStreamStatus.Playing)
             result.success(true)
         } catch (e: Exception) {
@@ -460,11 +451,11 @@ public class SoundStreamPlugin : FlutterPlugin,
     private fun createRecordListener(): OnRecordPositionUpdateListener {
         return object : OnRecordPositionUpdateListener {
             override fun onMarkerReached(recorder: AudioRecord) {
-                recorder.read(audioData!!, 0, mRecorderBufferSize)
+                audioData?.let { recorder.read(it, 0, mRecorderBufferSize) }
             }
 
             override fun onPeriodicNotification(recorder: AudioRecord) {
-                val data = audioData!!
+                val data = audioData ?: return
                 val shortOut = recorder.read(data, 0, mPeriodFrames)
                 // this condition to prevent app crash from happening in Android Devices
                 // See issues: https://github.com/CasperPas/flutter-sound-stream/issues/25
