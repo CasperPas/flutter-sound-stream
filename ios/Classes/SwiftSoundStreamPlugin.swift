@@ -44,7 +44,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var mPlayerSampleRate: Double = 16000 // 16Khz
     private var mPlayerBufferSize: AVAudioFrameCount = 8192
     private var mPlayerOutputFormat: AVAudioFormat!
-    private var mPlayerInputFormat: AVAudioFormat!
+    private var mPlayerInputFormat: AVAudioFormat?
 
     /** ======== Basic Plugin initialization ======== **/
 
@@ -270,6 +270,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         debugLogging = argsArr["showLogs"] as? Bool ?? debugLogging
         mPlayerInputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mPlayerSampleRate, channels: 1, interleaved: true)
         sendPlayerStatus(SoundStreamStatus.Initialized)
+        sendResult(result, true)
     }
 
     private func attachPlayer() {
@@ -286,6 +287,8 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         try! session.setActive(true)
         mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE, channels: 1, interleaved: true)
         mRecordFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mRecordSampleRate, channels: 1, interleaved: true)
+        // Initialize player input format with default values
+        mPlayerInputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mPlayerSampleRate, channels: 1, interleaved: true)
 
         mAudioEngine.attach(mPlayerNode)
         mAudioEngine.connect(mPlayerNode, to: mAudioEngine.mainMixerNode, format: mPlayerOutputFormat)
@@ -397,27 +400,47 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
 
     private func pushPlayerChunk(_ chunk: [UInt8], _ result: @escaping FlutterResult) {
+        // Ensure player input format is available before converting buffer
+        guard let inputFormat = mPlayerInputFormat,
+              let outputFormat = mPlayerOutputFormat else {
+            sendResult(result, FlutterError(code: SoundStreamErrors.FailedToWriteBuffer.rawValue,
+                                           message: "Audio formats not initialized",
+                                           details: nil))
+            return
+        }
+        
         let buffer = bytesToAudioBuffer(chunk)
-        mPlayerNode.scheduleBuffer(convertBufferFormat(
-            buffer,
-            from: mPlayerInputFormat,
-            to: mPlayerOutputFormat
-        ));
-        result(true)
+        if let convertedBuffer = convertBufferFormat(buffer, from: inputFormat, to: outputFormat) {
+            mPlayerNode.scheduleBuffer(convertedBuffer)
+            result(true)
+        } else {
+            sendResult(result, FlutterError(code: SoundStreamErrors.FailedToWriteBuffer.rawValue,
+                                           message: "Failed to convert buffer format",
+                                           details: nil))
+        }
     }
 
-    private func convertBufferFormat(_ buffer: AVAudioPCMBuffer, from: AVAudioFormat, to: AVAudioFormat) -> AVAudioPCMBuffer {
-
-        let formatConverter =  AVAudioConverter(from: from, to: to)
+    private func convertBufferFormat(_ buffer: AVAudioPCMBuffer, from: AVAudioFormat, to: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let formatConverter = AVAudioConverter(from: from, to: to) else {
+            return nil
+        }
+        
         let ratio: Float = Float(from.sampleRate)/Float(to.sampleRate)
-        let pcmBuffer = AVAudioPCMBuffer(pcmFormat: to, frameCapacity: UInt32(Float(buffer.frameCapacity) / ratio))!
+        guard let pcmBuffer = AVAudioPCMBuffer(pcmFormat: to, frameCapacity: UInt32(Float(buffer.frameCapacity) / ratio)) else {
+            return nil
+        }
 
         var error: NSError? = nil
         let inputBlock: AVAudioConverterInputBlock = {inNumPackets, outStatus in
             outStatus.pointee = .haveData
             return buffer
         }
-        formatConverter?.convert(to: pcmBuffer, error: &error, withInputFrom: inputBlock)
+        
+        let status = formatConverter.convert(to: pcmBuffer, error: &error, withInputFrom: inputBlock)
+        if status == .error {
+            print("Audio conversion error: \(error?.localizedDescription ?? "Unknown error")")
+            return nil
+        }
 
         return pcmBuffer
     }
@@ -440,9 +463,19 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
 
     private func bytesToAudioBuffer(_ buf: [UInt8]) -> AVAudioPCMBuffer {
-        let frameLength = UInt32(buf.count) / mPlayerInputFormat.streamDescription.pointee.mBytesPerFrame
+        // Ensure player input format exists with proper error handling
+        guard let inputFormat = mPlayerInputFormat else {
+            // This should not happen if attachPlayer() was called properly
+            fatalError("Player input format is nil. Make sure attachPlayer() is called during initialization.")
+        }
+        
+        let bytesPerFrame = inputFormat.streamDescription.pointee.mBytesPerFrame
+        let frameLength = UInt32(buf.count) / bytesPerFrame
 
-        let audioBuffer = AVAudioPCMBuffer(pcmFormat: mPlayerInputFormat, frameCapacity: frameLength)!
+        guard let audioBuffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: frameLength) else {
+            fatalError("Failed to create AVAudioPCMBuffer")
+        }
+        
         audioBuffer.frameLength = frameLength
 
         let dstLeft = audioBuffer.int16ChannelData![0]
@@ -454,5 +487,4 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
         return audioBuffer
     }
-
 }
