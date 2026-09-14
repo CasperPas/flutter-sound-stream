@@ -6,4 +6,5 @@
 .pub/
 
 build/
+plans/
 **/*.wav

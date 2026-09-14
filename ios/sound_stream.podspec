@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'sound_stream'
-  s.version          = '0.1.0'
+  s.version          = '0.4.2'
   s.summary          = 'A flutter plugin for streaming audio data from mic & to speaker'
   s.description      = <<-DESC
   A flutter plugin for streaming audio data from mic & to speaker
@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
   s.author           = { 'Jeff Le' => 'me@jeffle.dev' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
+  s.resource_bundles = { 'sound_stream' => ['ios/sound_stream/Resources/*.plist'] }
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
 

@@ -9,28 +9,33 @@ class RecorderStream {
   final _recorderStatusController =
       StreamController<SoundStreamStatus>.broadcast();
 
+  /// Subscription to the shared events controller.
+  StreamSubscription<dynamic>? _eventsSubscription;
+
+  bool _isDisposed = false;
+
   RecorderStream._internal() {
     SoundStream();
-    _eventsStreamController.stream.listen(_eventListener);
+    _eventsSubscription = _eventsStreamController.stream.listen(_eventListener);
     _recorderStatusController.add(SoundStreamStatus.Unset);
     _audioStreamController.add(Uint8List(0));
   }
 
   /// Initialize Recorder with specified [sampleRate]
-  Future<dynamic> initialize({int sampleRate = 16000, bool showLogs = false}) =>
-      _methodChannel.invokeMethod<dynamic>("initializeRecorder", {
-        "sampleRate": sampleRate,
-        "showLogs": showLogs,
-      });
+  Future<void> initialize(
+          {int sampleRate = 16000, bool showLogs = false}) async {
+    await _invoke('initializeRecorder', {
+      "sampleRate": sampleRate,
+      "showLogs": showLogs,
+    });
+  }
 
   /// Start recording. Recorder will start pushing audio chunks (PCM 16bit data)
   /// to audiostream as Uint8List
-  Future<dynamic> start() =>
-      _methodChannel.invokeMethod<dynamic>("startRecording");
+  Future<void> start() async => await _invoke('startRecording');
 
   /// Recorder will stop recording and sending audio chunks to the [audioStream].
-  Future<dynamic> stop() =>
-      _methodChannel.invokeMethod<dynamic>("stopRecording");
+  Future<void> stop() async => await _invoke('stopRecording');
 
   /// Current status of the [RecorderStream]
   Stream<SoundStreamStatus> get status => _recorderStatusController.stream;
@@ -56,11 +61,14 @@ class RecorderStream {
     }
   }
 
-  /// Stop and close all streams. This cannot be undone
-  /// Only call this method if you don't want to use this anymore
+  /// Stop and close all streams. This cannot be undone.
+  /// Only call this method if you don't want to use this anymore.
+  /// Safe to call multiple times (idempotent).
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     stop();
-    _eventsStreamController.close();
+    _eventsSubscription?.cancel();
     _recorderStatusController.close();
     _audioStreamController.close();
   }

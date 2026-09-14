@@ -1,19 +1,5 @@
-buildscript {
-    ext.kotlin_version = '1.9.23'
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
 plugins {
     id "com.android.library"
-    id "kotlin-android"
 }
 
 group 'vn.casperpas.sound_stream'
@@ -29,9 +15,10 @@ rootProject.allprojects {
 android {
     namespace 'vn.casperpas.sound_stream'
 
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+    sourceSets.named("main") {
+        kotlin.directories.add("src/main/kotlin")
     }
+
     defaultConfig {
         minSdkVersion 23
         targetSdk 34
@@ -44,8 +31,11 @@ android {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

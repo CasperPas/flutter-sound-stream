@@ -8,9 +8,14 @@ class PlayerStream {
       StreamController<SoundStreamStatus>.broadcast();
   final _audioStreamController = StreamController<Uint8List>();
 
+  /// Subscription to the shared events controller.
+  StreamSubscription<dynamic>? _eventsSubscription;
+
+  bool _isDisposed = false;
+
   PlayerStream._internal() {
     SoundStream();
-    _eventsStreamController.stream.listen(_eventListener);
+    _eventsSubscription = _eventsStreamController.stream.listen(_eventListener);
     _playerStatusController.add(SoundStreamStatus.Unset);
     _audioStreamController.stream.listen((data) {
       writeChunk(data);
@@ -18,27 +23,29 @@ class PlayerStream {
   }
 
   /// Initialize Player with specified [sampleRate]
-  Future<dynamic> initialize({int sampleRate = 16000, bool showLogs = false}) =>
-      _methodChannel.invokeMethod("initializePlayer", {
-        "sampleRate": sampleRate,
-        "showLogs": showLogs,
-      });
+  Future<void> initialize(
+          {int sampleRate = 16000, bool showLogs = false}) async {
+    await _invoke('initializePlayer', {
+      "sampleRate": sampleRate,
+      "showLogs": showLogs,
+    });
+  }
 
   /// Player will start receiving audio chunks (PCM 16bit data)
   /// to audiostream as Uint8List to play audio.
-  Future<dynamic> start() => _methodChannel.invokeMethod("startPlayer");
+  Future<void> start() async => await _invoke('startPlayer');
 
   /// Player will stop receiving audio chunks.
-  Future<dynamic> stop() => _methodChannel.invokeMethod("stopPlayer");
+  Future<void> stop() async => await _invoke('stopPlayer');
 
   /// Push audio [data] (PCM 16bit data) to player buffer as Uint8List
   /// to play audio. Chunks will be queued/scheduled to play sequentially
-  Future<dynamic> writeChunk(Uint8List data) => _methodChannel
-      .invokeMethod("writeChunk", <String, dynamic>{"data": data});
+  Future<void> writeChunk(Uint8List data) async =>
+      await _invoke('writeChunk', <String, dynamic>{"data": data});
 
   /// Switching/Forcing player to use phone's speaker.
-  Future<dynamic> usePhoneSpeaker(bool value) => _methodChannel
-      .invokeMethod("usePhoneSpeaker", <String, dynamic>{"value": value});
+  Future<void> usePhoneSpeaker(bool value) async =>
+      await _invoke('usePhoneSpeaker', <String, dynamic>{"value": value});
 
   /// Current status of the [PlayerStream]
   Stream<SoundStreamStatus> get status => _playerStatusController.stream;
@@ -60,11 +67,14 @@ class PlayerStream {
     }
   }
 
-  /// Stop and close all streams. This cannot be undone
-  /// Only call this method if you don't want to use this anymore
+  /// Stop and close all streams. This cannot be undone.
+  /// Only call this method if you don't want to use this anymore.
+  /// Safe to call multiple times (idempotent).
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     stop();
-    _eventsStreamController.close();
+    _eventsSubscription?.cancel();
     _playerStatusController.close();
     _audioStreamController.close();
   }

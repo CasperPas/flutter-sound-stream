@@ -18,7 +18,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-// Removed legacy v1 embedding imports
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.ShortBuffer
@@ -118,8 +117,8 @@ public class SoundStreamPlugin : FlutterPlugin,
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         try {
             methodChannel.setMethodCallHandler(null)
-            mListener?.onMarkerReached(null)
-            mListener?.onPeriodicNotification(null)
+            // Properly detach the listener instead of invoking callbacks with null
+            mRecorder?.setRecordPositionUpdateListener(null)
             mListener = null
             mRecorder?.let {
                 it.stop()
@@ -257,8 +256,14 @@ public class SoundStreamPlugin : FlutterPlugin,
     }
 
     private fun completeInitializeRecorder() {
-
         debugLog("completeInitialize")
+
+        // Guard: if activeResult was replaced by a newer init call, skip silently
+        val result = activeResult ?: run {
+            debugLog("skipping complete — result already replaced")
+            return
+        }
+
         val initResult: HashMap<String, Any> = HashMap()
 
         if (permissionToRecordAudio) {
@@ -270,7 +275,7 @@ public class SoundStreamPlugin : FlutterPlugin,
 
         initResult["success"] = permissionToRecordAudio
         debugLog("sending result")
-        activeResult?.success(initResult)
+        result.success(initResult)
         debugLog("leaving complete")
         activeResult = null
     }
@@ -457,15 +462,15 @@ public class SoundStreamPlugin : FlutterPlugin,
             override fun onPeriodicNotification(recorder: AudioRecord) {
                 val data = audioData ?: return
                 val shortOut = recorder.read(data, 0, mPeriodFrames)
-                // this condition to prevent app crash from happening in Android Devices
-                // See issues: https://github.com/CasperPas/flutter-sound-stream/issues/25
+                // Guard against read returning error codes
                 if (shortOut < 1) {
                     return
                 }
-                // https://flutter.io/platform-channels/#codec
-                // convert short to int because of platform-channel's limitation
+                // Copy data before sending to prevent corruption from the next read cycle
+                val sendBuffer = data.copyOf(shortOut)
+                // convert to bytes for platform-channel codec
                 val byteBuffer = ByteBuffer.allocate(shortOut * 2)
-                byteBuffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(data)
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(sendBuffer)
 
                 sendEventMethod("dataPeriod", byteBuffer.array())
             }

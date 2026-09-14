@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:sound_stream/sound_stream.dart';
 import 'package:web_socket_channel/io.dart';
 
-// Change this URL to your own
-const _SERVER_URL = 'wss://linhlt.ap.ngrok.io';
+// Change this URL to your own WebSocket server.
+// Example: 'ws://localhost:8888' for local testing.
+const _SERVER_URL = 'wss://example.your-domain.com';
 
 void main() {
   runApp(MyApp());
@@ -40,6 +41,9 @@ class _MyAppState extends State<MyApp> {
     _recorderStatus?.cancel();
     _playerStatus?.cancel();
     _audioStream?.cancel();
+    channel.sink.close();
+    _recorder.dispose();
+    _player.dispose();
     super.dispose();
   }
 

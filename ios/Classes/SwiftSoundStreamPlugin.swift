@@ -106,11 +106,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     /** ======== Plugin methods ======== **/
 
     private func checkAndRequestPermission(completion callback: @escaping ((Bool) -> Void)) {
-        if (hasPermission) {
-            callback(hasPermission)
-            return
-        }
-
+        // Always re-query the actual AVAudioSession state instead of relying on cache
         var permission: AVAudioSession.RecordPermission
 #if swift(>=4.2)
         permission = AVAudioSession.sharedInstance().recordPermission
@@ -119,27 +115,17 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 #endif
         switch permission {
         case .granted:
-            print("granted")
             hasPermission = true
-            callback(hasPermission)
+            callback(true)
             break
         case .denied:
-            print("denied")
             hasPermission = false
-            callback(hasPermission)
+            callback(false)
             break
         case .undetermined:
-            print("undetermined")
-            AVAudioSession.sharedInstance().requestRecordPermission() { [unowned self] allowed in
-                if allowed {
-                    self.hasPermission = true
-                    print("undetermined true")
-                    callback(self.hasPermission)
-                } else {
-                    self.hasPermission = false
-                    print("undetermined false")
-                    callback(self.hasPermission)
-                }
+            AVAudioSession.sharedInstance().requestRecordPermission { [unowned self] allowed in
+                self.hasPermission = allowed
+                callback(allowed)
             }
             break
         default:
@@ -159,7 +145,11 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
             return
         }
 
-        try? mAudioEngine.start()
+        do {
+            try mAudioEngine.start()
+        } catch {
+            debugPrint("[SoundStream] Engine start failed: \(error)")
+        }
     }
 
     private func stopEngine() {
@@ -212,11 +202,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
             }
 
             let convertedBuffer = AVAudioPCMBuffer(pcmFormat: self.mRecordFormat!, frameCapacity: UInt32(Float(buffer.frameCapacity) / ratio))!
-            self.isRecording = true
 
             var error: NSError?
             let status = converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputCallback)
-            assert(status != .error)
+            if status == .error {
+                debugPrint("[SoundStream] Recorder conversion error: \(error?.localizedDescription ?? "unknown")")
+                return
+            }
 
             if (self.mRecordFormat?.commonFormat == AVAudioCommonFormat.pcmFormatInt16) {
                 let values = self.audioBufferToBytes(convertedBuffer)
@@ -226,6 +218,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
 
     private func startRecorder() {
+        isRecording = false
         resetEngineForRecord()
         startEngine()
         sendRecorderStatus(SoundStreamStatus.Playing)
@@ -275,16 +268,31 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
     private func attachPlayer() {
         let session = AVAudioSession.sharedInstance()
-        try? session.setActive(false)
-        try! session.setCategory(
-            .playAndRecord,
-            options: [
-                .defaultToSpeaker,
-                .allowBluetooth,
-                .allowBluetoothA2DP,
-                .allowAirPlay
-            ])
-        try! session.setActive(true)
+        do {
+            try session.setActive(false)
+        } catch {
+            debugPrint("[SoundStream] Session deactivate failed: \(error)")
+        }
+
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .allowBluetoothA2DP,
+                    .allowAirPlay
+                ])
+        } catch {
+            debugPrint("[SoundStream] Session setCategory failed: \(error)")
+        }
+
+        do {
+            try session.setActive(true)
+        } catch {
+            debugPrint("[SoundStream] Session activate failed: \(error)")
+        }
+
         mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE, channels: 1, interleaved: true)
         mRecordFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatInt16, sampleRate: mRecordSampleRate, channels: 1, interleaved: true)
         // Initialize player input format with default values
@@ -409,7 +417,12 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
             return
         }
         
-        let buffer = bytesToAudioBuffer(chunk)
+        guard let buffer = bytesToAudioBuffer(chunk) else {
+            sendResult(result, FlutterError(code: SoundStreamErrors.FailedToWriteBuffer.rawValue,
+                                           message: "Failed to convert bytes to audio buffer",
+                                           details: nil))
+            return
+        }
         if let convertedBuffer = convertBufferFormat(buffer, from: inputFormat, to: outputFormat) {
             mPlayerNode.scheduleBuffer(convertedBuffer)
             result(true)
@@ -462,20 +475,20 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         return audioByteArray
     }
 
-    private func bytesToAudioBuffer(_ buf: [UInt8]) -> AVAudioPCMBuffer {
-        // Ensure player input format exists with proper error handling
+    private func bytesToAudioBuffer(_ buf: [UInt8]) -> AVAudioPCMBuffer? {
         guard let inputFormat = mPlayerInputFormat else {
-            // This should not happen if attachPlayer() was called properly
-            fatalError("Player input format is nil. Make sure attachPlayer() is called during initialization.")
+            debugPrint("[SoundStream] bytesToAudioBuffer: player input format is nil")
+            return nil
         }
-        
+
         let bytesPerFrame = inputFormat.streamDescription.pointee.mBytesPerFrame
         let frameLength = UInt32(buf.count) / bytesPerFrame
 
         guard let audioBuffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: frameLength) else {
-            fatalError("Failed to create AVAudioPCMBuffer")
+            debugPrint("[SoundStream] bytesToAudioBuffer: failed to create AVAudioPCMBuffer")
+            return nil
         }
-        
+
         audioBuffer.frameLength = frameLength
 
         let dstLeft = audioBuffer.int16ChannelData![0]

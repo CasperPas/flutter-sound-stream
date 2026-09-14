@@ -1,3 +1,21 @@
+## 0.4.3
+* Fix iOS: replace `fatalError` with graceful error handling in audio buffer conversion
+* Fix iOS: replace `try!` on AVAudioSession with proper `do-catch` blocks
+* Fix iOS: handle `AVAudioEngine.start()` errors instead of silently ignoring them
+* Fix iOS: fix recorder tap re-installation lifecycle (clear isRecording before starting)
+* Fix iOS: re-check permission on each call instead of caching (handles Settings changes)
+* Fix Dart: dispose no longer closes shared event controller (prevents cross-component breakage)
+* Fix Dart: dispose is now idempotent (safe to call multiple times)
+* Fix Dart: add SoundStreamException for typed platform errors
+* Fix Dart: use typed _invoke wrapper for all platform calls
+* Fix Android: guard against activeResult race condition during re-initialization
+* Fix Android: copy audio data before sending to prevent corruption under load
+* Fix Android: properly detach record listener on engine detach
+* Fix: update podspec version to 0.4.2
+* Fix: add NSMicrophoneUsageDescription to iOS Info.plist
+* Fix: update dead ngrok URL in example app
+* Fix: add proper dispose calls in example apps
+
 ## 0.4.2
 * Add flutter 3.29+ support from @beingmishra
 

@@ -37,6 +37,8 @@ class _MyAppState extends State<MyApp> {
     _recorderStatus?.cancel();
     _playerStatus?.cancel();
     _audioStream?.cancel();
+    _recorder.dispose();
+    _player.dispose();
     super.dispose();
   }
 
